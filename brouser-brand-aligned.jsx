@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Search, Users, MessageSquare, Newspaper, Zap, Loader2, Mail, FileDown, MapPin, Briefcase, Handshake, TrendingUp, Filter, Star, StarOff, BarChart3, X, ArrowUpDown, Clock, Save, Trash2, Copy, Check } from 'lucide-react';
 
 // --- Configuration for Gemini API ---
-const API_KEY = "";
+const API_KEY = "gen-lang-client-0336998857";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
 
 // Brouhaha Brand Colors (from brand guidelines)
