@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Search, Users, MessageSquare, Newspaper, Zap, Loader2, Mail, FileDown, MapPin, Briefcase, Handshake, TrendingUp, Filter, Star, StarOff, BarChart3, X, ArrowUpDown, Clock, Save, Trash2, Copy, Check } from 'lucide-react';
+import { Search, Users, MessageSquare, Newspaper, Zap, Loader2, Mail, FileDown, MapPin, Briefcase, DollarSign, TrendingUp, Filter, Star, StarOff, BarChart3, X, ArrowUpDown, Clock, Save, Trash2, Copy, Check } from 'lucide-react';
 
 // --- Configuration for Gemini API ---
 const API_KEY = process.env.REACT_APP_GEMINI_API_KEY || "";
@@ -824,7 +824,7 @@ export default function App() {
  
                  <div className="border-t pt-4" style={{borderColor: '#ffffff20'}}>
                      <p className="font-bold text-white mb-2 flex items-center text-sm uppercase tracking-wide text-gray-400">
-                       <Handshake className="w-4 h-4 mr-2" style={{color: BRAND_COLORS.chartreuse}}/>
+                       <DollarSign className="w-4 h-4 mr-2" style={{color: BRAND_COLORS.chartreuse}}/>
                        Publishing Insight
                      </p>
                      <p className="text-gray-300 font-light pl-6 leading-relaxed text-sm">{currentAnalysis.publishing_insights}</p>
