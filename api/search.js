@@ -14,9 +14,11 @@ module.exports = async function handler(req, res) {
 
   const sanitizedQuery = query.trim().slice(0, 200);
 
-  const user = `Find up to 20 independent newsletters that REGULARLY COVER THE TOPIC of: "${sanitizedQuery}".
+  const user = `Find up to 20 independent newsletters related to: "${sanitizedQuery}".
 
-Important: match on topic coverage, not on newsletter name. A newsletter called "Fathom" that covers travel and hotels should be included; a newsletter called "Hotels Today" that covers finance should not.
+Include both:
+1. Newsletters whose NAME contains or references the topic (e.g. "Hotels Above Par" for a hotels query)
+2. Newsletters that REGULARLY COVER the topic even if the name doesn't reference it (e.g. a travel newsletter that consistently covers hotels)
 
 Spread results across multiple platforms — include newsletters from Substack, beehiiv, Ghost, Buttondown, Kit (formerly ConvertKit), and Paragraph. Do NOT return only Substack newsletters; actively search each platform.
 ${excludeMedia ? 'EXCLUDE major traditional media outlets (NYT, WSJ, Washington Post, etc). Focus on independent creators.' : ''}
