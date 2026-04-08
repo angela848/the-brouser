@@ -113,6 +113,15 @@ export default function App() {
     setFilterLanguage('all');
   }, []);
 
+  const handleReset = useCallback(() => {
+    setTheme('');
+    setNewsletters([]);
+    setSelected({});
+    setCurrentAnalysis(null);
+    setError(null);
+    resetFilters();
+  }, [resetFilters]);
+
   const filtersActive = filterEngagement !== 'all' || filterLocation || filterLanguage !== 'all';
 
   const apiPost = useCallback(async (endpoint, body) => {
@@ -241,9 +250,11 @@ export default function App() {
         <div style={{ height: 3, background: 'var(--accent)', marginLeft: '-2rem', marginRight: '-2rem' }} />
         <div style={{ maxWidth: 1600, margin: '0 auto', padding: '1.5rem 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '2rem' }}>
           <div>
-            <h1 className="font-display" style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', lineHeight: 0.9, margin: 0, color: 'var(--ink)', letterSpacing: '-0.02em', fontWeight: 400 }}>
-              The Brouser™
-            </h1>
+            <button onClick={handleReset} style={{ background: 'none', border: 'none', padding: 0, margin: 0, cursor: 'pointer', textAlign: 'left', display: 'block' }}>
+              <h1 className="font-display hover-color-accent" style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', lineHeight: 0.9, margin: 0, color: 'var(--ink)', letterSpacing: '-0.02em', fontWeight: 400, transition: 'color 0.15s' }}>
+                The Brouser™
+              </h1>
+            </button>
             <p style={{ margin: '0.5rem 0 0', color: 'var(--ink-dim)', fontSize: '0.9rem', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500 }}>
               AI-powered newsletter discovery &nbsp;·&nbsp; by Brouhaha Collective
             </p>
