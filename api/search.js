@@ -1,23 +1,20 @@
-module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const { setCors, requirePost, getApiKey, callPerplexity, extractJson } = require('./_lib');
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+module.exports = async function handler(req, res) {
+  setCors(res);
+  if (!requirePost(req, res)) return;
 
   const { query, excludeMedia = true } = req.body || {};
-
   if (!query || typeof query !== 'string' || !query.trim()) {
     return res.status(400).json({ error: 'A search query is required.' });
   }
 
-  const apiKey = process.env.PERPLEXITY_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'API key not configured on the server.' });
+  const apiKey = getApiKey(res);
+  if (!apiKey) return;
 
   const sanitizedQuery = query.trim().slice(0, 200);
 
-  const userPrompt = `Find up to 20 popular and relevant self-published newsletters for the query: "${sanitizedQuery}".
+  const user = `Find up to 20 popular and relevant self-published newsletters for the query: "${sanitizedQuery}".
 Use web search to ensure these are currently active and popular.
 
 Prioritize platforms: Substack, beehiiv, Ghost, Buttondown, Kit (formerly ConvertKit), Paragraph.
@@ -28,24 +25,10 @@ Return ONLY a valid JSON array of objects with exactly two fields: "name" (strin
 No markdown, no explanations, no other text — just the JSON array.`;
 
   try {
-    const perplexityRes = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'sonar',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a newsletter research expert. Find real, active self-published newsletters. Return only valid JSON arrays, nothing else.',
-          },
-          { role: 'user', content: userPrompt },
-        ],
-        temperature: 0.2,
-        max_tokens: 3000,
-      }),
+    const perplexityRes = await callPerplexity(apiKey, {
+      system: 'You are a newsletter research expert. Find real, active self-published newsletters. Return only valid JSON arrays, nothing else.',
+      user,
+      maxTokens: 3000,
     });
 
     if (!perplexityRes.ok) {
@@ -57,21 +40,13 @@ No markdown, no explanations, no other text — just the JSON array.`;
     const data = await perplexityRes.json();
     const content = data.choices?.[0]?.message?.content || '';
 
-    let newsletters = [];
-    try {
-      const parsed = JSON.parse(content);
-      newsletters = Array.isArray(parsed) ? parsed : parsed.newsletters || [];
-    } catch {
-      const match = content.match(/\[[\s\S]*\]/);
-      if (match) {
-        newsletters = JSON.parse(match[0]);
-      } else {
-        console.error('Could not parse JSON from response:', content.slice(0, 500));
-        return res.status(502).json({ error: 'Could not parse search results. Please try again.' });
-      }
+    const parsed = extractJson(content, 'array');
+    if (!parsed) {
+      console.error('Could not parse JSON from response:', content.slice(0, 500));
+      return res.status(502).json({ error: 'Could not parse search results. Please try again.' });
     }
 
-    newsletters = newsletters
+    const newsletters = parsed
       .filter((n) => n && typeof n === 'object' && n.name && n.url)
       .map((n) => ({
         name: String(n.name).trim(),

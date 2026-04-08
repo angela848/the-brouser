@@ -54,6 +54,17 @@ body {
   border-top: 1px solid var(--border);
 }
 
+/* Hover / focus utilities — used instead of inline JS style mutations */
+.focus-accent:focus           { border-color: var(--accent) !important; outline: none; }
+.hover-color-accent           { transition: color 0.15s; }
+.hover-color-accent:hover     { color: var(--accent); }
+.hover-accent-border          { transition: border-color 0.15s; }
+.hover-accent-border:hover    { border-color: var(--accent); }
+.icon-btn                     { transition: background 0.1s; border-radius: 4px; }
+.icon-btn:hover               { background: var(--surface-3); }
+.list-item                    { transition: background 0.1s; }
+.list-item:not(.is-active):hover { background: var(--surface-2); }
+
 /* Custom scrollbar */
 .scroll-thin::-webkit-scrollbar       { width: 4px; }
 .scroll-thin::-webkit-scrollbar-track { background: transparent; }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   Search, Users, MessageSquare, Zap, Loader2, Mail,
   FileDown, MapPin, Briefcase, DollarSign, Filter,
@@ -6,28 +6,47 @@ import {
 } from 'lucide-react';
 
 // ─── Local Storage ────────────────────────────────────────────────────────────
-const CACHE_KEY   = 'brouser_cache_v3';
-const FAV_KEY     = 'brouser_favorites_v3';
-const HISTORY_KEY = 'brouser_history_v3';
-const CACHE_TTL   = 1000 * 60 * 60;
+const DISCOVERY_CACHE_KEY = 'brouser_discovery_v3';
+const ANALYSIS_CACHE_KEY  = 'brouser_analysis_v3';
+const FAV_KEY             = 'brouser_favorites_v3';
+const HISTORY_KEY         = 'brouser_history_v3';
+const CACHE_TTL           = 1000 * 60 * 60;
 
 const ls = {
   get: (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
 
-const getCache = (key) => {
-  const cache = ls.get(CACHE_KEY, {});
+// Discovery cache — only read on explicit cache hit, not in render path
+const getDiscoveryCache = (key) => {
+  const cache = ls.get(DISCOVERY_CACHE_KEY, {});
   const entry = cache[key];
   return entry && Date.now() - entry.ts < CACHE_TTL ? entry.data : null;
 };
-
-const setCache = (key, data) => {
-  const cache = ls.get(CACHE_KEY, {});
+const setDiscoveryCache = (key, data) => {
+  const cache = ls.get(DISCOVERY_CACHE_KEY, {});
   cache[key] = { data, ts: Date.now() };
   const keys = Object.keys(cache);
-  if (keys.length > 50) delete cache[keys[0]];
-  ls.set(CACHE_KEY, cache);
+  if (keys.length > 20) delete cache[keys[0]];
+  ls.set(DISCOVERY_CACHE_KEY, cache);
+};
+
+// Load all non-expired analysis entries from localStorage into memory once.
+const loadAnalysisCache = () => {
+  const raw = ls.get(ANALYSIS_CACHE_KEY, {});
+  const now = Date.now();
+  return Object.fromEntries(
+    Object.entries(raw)
+      .filter(([, v]) => v && now - v.ts < CACHE_TTL)
+      .map(([k, v]) => [k, v.data])
+  );
+};
+const persistAnalysis = (url, data) => {
+  const raw = ls.get(ANALYSIS_CACHE_KEY, {});
+  raw[url] = { data, ts: Date.now() };
+  const keys = Object.keys(raw);
+  if (keys.length > 50) delete raw[keys[0]];
+  ls.set(ANALYSIS_CACHE_KEY, raw);
 };
 
 // ─── App ─────────────────────────────────────────────────────────────────────
@@ -40,6 +59,9 @@ export default function App() {
   const [favorites, setFavorites]       = useState(() => ls.get(FAV_KEY, []));
   const [searchHistory, setSearchHistory] = useState(() => ls.get(HISTORY_KEY, []));
 
+  // In-memory analysis cache — avoids repeated localStorage reads in render path
+  const [analysisCache, setAnalysisCache] = useState(loadAnalysisCache);
+
   const [sortBy, setSortBy]                     = useState('relevance');
   const [filterEngagement, setFilterEngagement] = useState('all');
   const [filterLocation, setFilterLocation]     = useState('');
@@ -49,24 +71,65 @@ export default function App() {
 
   const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
   const [isLoading, setIsLoading] = useState({ discovery: false, analysis: false, export: false });
-  const [error, setError] = useState(null);
+  const [error, setError]         = useState(null);
 
-  // Persist
-  const saveFavorites = (f) => { setFavorites(f); ls.set(FAV_KEY, f); };
-  const isFav = (url) => favorites.some((f) => f.url === url);
-  const toggleFav = (n) => saveFavorites(isFav(n.url) ? favorites.filter((f) => f.url !== n.url) : [...favorites, n]);
+  const copyTimer = useRef(null);
 
-  const addHistory = useCallback((term) => {
-    setSearchHistory((p) => { const h = [term, ...p.filter((t) => t !== term)].slice(0, 10); ls.set(HISTORY_KEY, h); return h; });
+  // Write analysis to both React state and localStorage
+  const cacheAnalysis = useCallback((url, data) => {
+    persistAnalysis(url, data);
+    setAnalysisCache((prev) => ({ ...prev, [url]: data }));
   }, []);
 
-  const copyUrl = (url) => { navigator.clipboard.writeText(url); setCopiedUrl(url); setTimeout(() => setCopiedUrl(null), 2000); };
+  const saveFavorites = useCallback((f) => {
+    setFavorites(f);
+    ls.set(FAV_KEY, f);
+  }, []);
 
-  // ── Discover ────────────────────────────────────────────────────────────────
+  const addHistory = useCallback((term) => {
+    setSearchHistory((prev) => {
+      const updated = [term, ...prev.filter((t) => t !== term)].slice(0, 10);
+      ls.set(HISTORY_KEY, updated);
+      return updated;
+    });
+  }, []);
+
+  const isFav = useCallback((url) => favorites.some((f) => f.url === url), [favorites]);
+
+  const toggleFav = useCallback((n) => {
+    saveFavorites(isFav(n.url) ? favorites.filter((f) => f.url !== n.url) : [...favorites, n]);
+  }, [favorites, isFav, saveFavorites]);
+
+  const copyUrl = useCallback((url) => {
+    navigator.clipboard.writeText(url);
+    setCopiedUrl(url);
+    clearTimeout(copyTimer.current);
+    copyTimer.current = setTimeout(() => setCopiedUrl(null), 2000);
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setFilterEngagement('all');
+    setFilterLocation('');
+    setFilterLanguage('all');
+  }, []);
+
+  const filtersActive = filterEngagement !== 'all' || filterLocation || filterLanguage !== 'all';
+
+  const apiPost = useCallback(async (endpoint, body) => {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Request failed.');
+    return data;
+  }, []);
+
   const handleDiscover = async () => {
     if (!theme.trim()) { setError('Please enter a search term.'); return; }
-    const cacheKey = `discovery_${theme}_${excludeMedia}`;
-    const cached = getCache(cacheKey);
+    const cacheKey = `${theme}_${excludeMedia}`;
+    const cached = getDiscoveryCache(cacheKey);
     if (cached) { setNewsletters(cached); setSelected({}); setCurrentAnalysis(null); return; }
 
     setIsLoading((p) => ({ ...p, discovery: true }));
@@ -74,34 +137,27 @@ export default function App() {
     addHistory(theme);
 
     try {
-      const res  = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: theme, excludeMedia }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Search failed.');
+      const data = await apiPost('/api/search', { query: theme, excludeMedia });
       setNewsletters(data.newsletters || []);
-      setCache(cacheKey, data.newsletters || []);
+      setDiscoveryCache(cacheKey, data.newsletters || []);
     } catch (e) { setError(e.message); }
     finally { setIsLoading((p) => ({ ...p, discovery: false })); }
   };
 
-  // ── Analyze ─────────────────────────────────────────────────────────────────
   const handleAnalyze = async (newsletter) => {
-    const cacheKey = `analysis_${newsletter.url}`;
-    const cached = getCache(cacheKey);
+    const cached = analysisCache[newsletter.url];
     if (cached) { setCurrentAnalysis({ ...newsletter, ...cached }); return; }
 
     setCurrentAnalysis(null);
     setIsLoading((p) => ({ ...p, analysis: true }));
     try {
-      const res  = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newsletter.name, url: newsletter.url }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Analysis failed.');
-      setCache(cacheKey, data.analysis);
+      const data = await apiPost('/api/analyze', { name: newsletter.name, url: newsletter.url });
+      cacheAnalysis(newsletter.url, data.analysis);
       setCurrentAnalysis({ ...newsletter, ...data.analysis });
     } catch (e) { setError(e.message); }
     finally { setIsLoading((p) => ({ ...p, analysis: false })); }
   };
 
-  // ── Export ──────────────────────────────────────────────────────────────────
   const handleExport = async () => {
     const toExport = newsletters.filter((n) => selected[n.url]).slice(0, 25);
     if (!toExport.length) return;
@@ -114,69 +170,75 @@ export default function App() {
       const batch = toExport.slice(i, i + 5);
       setExportProgress({ current: i, total: toExport.length });
       const results = await Promise.all(batch.map(async (n) => {
-        const ck = `analysis_${n.url}`;
-        const c = getCache(ck);
-        if (c) return c;
+        if (analysisCache[n.url]) return analysisCache[n.url];
         try {
-          const res = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: n.name, url: n.url }) });
-          const d = await res.json();
-          if (res.ok) { setCache(ck, d.analysis); return d.analysis; }
-        } catch {}
-        return null;
+          const data = await apiPost('/api/analyze', { name: n.name, url: n.url });
+          cacheAnalysis(n.url, data.analysis);
+          return data.analysis;
+        } catch { return null; }
       }));
       analyses.push(...results);
       if (i + 5 < toExport.length) await new Promise((r) => setTimeout(r, 500));
     }
 
-    const rows = [['Name','URL','Theme','Est. Reach','Engagement','Engagement Score','Contact','Location','Muck Rack','Categories','Frequency','Language','PR Insights','Publishing Insights']];
-    toExport.forEach((n, i) => {
-      const a = analyses[i]; if (!a) return;
-      const q = (s) => `"${String(s || '').replace(/"/g, '""')}"`;
-      rows.push([q(n.name),q(n.url),q(a.theme),q(a.reach),q(a.engagement),q(a.engagement_score),q(a.contact),q(a.location),q(a.muckrack_url),q((a.categories||[]).join(', ')),q(a.frequency),q(a.language),q(a.pr_insights),q(a.publishing_insights)]);
+    const q = (s) => `"${String(s || '').replace(/"/g, '""')}"`;
+    const rows = [
+      ['Name','URL','Theme','Est. Reach','Engagement','Engagement Score','Contact','Location','Muck Rack','Categories','Frequency','Language','PR Insights','Publishing Insights'],
+      ...toExport.flatMap((n, i) => {
+        const a = analyses[i];
+        return a ? [[q(n.name),q(n.url),q(a.theme),q(a.reach),q(a.engagement),q(a.engagement_score),q(a.contact),q(a.location),q(a.muckrack_url),q((a.categories||[]).join(', ')),q(a.frequency),q(a.language),q(a.pr_insights),q(a.publishing_insights)]] : [];
+      }),
+    ];
+    const link = Object.assign(document.createElement('a'), {
+      href: 'data:text/csv;charset=utf-8,' + encodeURI(rows.map((r) => r.join(',')).join('\n')),
+      download: `brouser_${Date.now()}.csv`,
     });
-    const link = Object.assign(document.createElement('a'), { href: 'data:text/csv;charset=utf-8,' + encodeURI(rows.map((r) => r.join(',')).join('\n')), download: `brouser_${Date.now()}.csv` });
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
     setIsLoading((p) => ({ ...p, export: false }));
-    setExportProgress({ current: 0, total: 0 });
   };
 
-  // ── Sorted + Filtered ───────────────────────────────────────────────────────
+  const selectedCount = useMemo(() => Object.values(selected).filter(Boolean).length, [selected]);
+
   const displayList = useMemo(() => {
     let list = [...newsletters];
-    if (filterEngagement !== 'all') list = list.filter((n) => { const c = getCache(`analysis_${n.url}`); return !c || c.engagement?.toLowerCase() === filterEngagement; });
-    if (filterLocation) list = list.filter((n) => { const c = getCache(`analysis_${n.url}`); return !c || c.location?.toLowerCase().includes(filterLocation.toLowerCase()); });
-    if (filterLanguage !== 'all') list = list.filter((n) => { const c = getCache(`analysis_${n.url}`); return !c || (c.language || 'english').toLowerCase().includes(filterLanguage); });
+    if (filterEngagement !== 'all') list = list.filter((n) => { const c = analysisCache[n.url]; return !c || c.engagement?.toLowerCase() === filterEngagement; });
+    if (filterLocation)             list = list.filter((n) => { const c = analysisCache[n.url]; return !c || c.location?.toLowerCase().includes(filterLocation.toLowerCase()); });
+    if (filterLanguage !== 'all')   list = list.filter((n) => { const c = analysisCache[n.url]; return !c || (c.language || 'english').toLowerCase().includes(filterLanguage); });
     list.sort((a, b) => {
       if (sortBy === 'name') return a.name.localeCompare(b.name);
-      const ca = getCache(`analysis_${a.url}`), cb = getCache(`analysis_${b.url}`);
+      const ca = analysisCache[a.url], cb = analysisCache[b.url];
       if (sortBy === 'engagement') return (cb?.engagement_score || 0) - (ca?.engagement_score || 0);
-      if (sortBy === 'reach') { const p = (s) => parseInt(String(s||'0').replace(/\D/g,''))||0; return p(cb?.reach) - p(ca?.reach); }
+      if (sortBy === 'reach') {
+        const p = (s) => parseInt(String(s || '0').replace(/\D/g, '')) || 0;
+        return p(cb?.reach) - p(ca?.reach);
+      }
       const diff = (cb ? 1 : 0) - (ca ? 1 : 0);
       return diff !== 0 ? diff : (cb?.engagement_score || 0) - (ca?.engagement_score || 0);
     });
     return list;
-  }, [newsletters, sortBy, filterEngagement, filterLocation, filterLanguage]); // eslint-disable-line
+  }, [newsletters, analysisCache, sortBy, filterEngagement, filterLocation, filterLanguage]);
 
-  // ── Stats ───────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
     if (!newsletters.length) return null;
-    let total = 0, sum = 0;
+    let analyzed = 0, sum = 0;
     const dist = { high: 0, medium: 0, low: 0 };
-    newsletters.forEach((n) => { const c = getCache(`analysis_${n.url}`); if (c) { total++; sum += c.engagement_score || 0; const k = c.engagement?.toLowerCase(); if (k in dist) dist[k]++; } });
-    return { total: newsletters.length, analyzed: total, avgEngagement: total ? (sum / total).toFixed(1) : '—', distribution: dist };
-  }, [newsletters, displayList]); // eslint-disable-line
+    newsletters.forEach((n) => {
+      const c = analysisCache[n.url];
+      if (!c) return;
+      analyzed++;
+      sum += c.engagement_score || 0;
+      const k = c.engagement?.toLowerCase();
+      if (k in dist) dist[k]++;
+    });
+    return { total: newsletters.length, analyzed, avgEngagement: analyzed ? (sum / analyzed).toFixed(1) : '—', distribution: dist };
+  }, [newsletters, analysisCache]);
 
-  const selectedCount = Object.values(selected).filter(Boolean).length;
-
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)', fontFamily: "'Space Grotesk', sans-serif" }}>
 
-      {/* ── Masthead ── */}
+      {/* Masthead */}
       <header style={{ borderBottom: '1px solid var(--border)', padding: '0 2rem' }}>
-        {/* Top accent line */}
         <div style={{ height: 3, background: 'var(--accent)', marginLeft: '-2rem', marginRight: '-2rem' }} />
-
         <div style={{ maxWidth: 1600, margin: '0 auto', padding: '1.5rem 0', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '2rem' }}>
           <div>
             <h1 className="font-display" style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', lineHeight: 0.9, margin: 0, color: 'var(--ink)', letterSpacing: '-0.02em', fontWeight: 400 }}>
@@ -186,10 +248,8 @@ export default function App() {
               AI-powered newsletter discovery &nbsp;·&nbsp; by Brouhaha Collective
             </p>
           </div>
-
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <a href="http://www.thebrouhahacollective.com" target="_blank" rel="noopener noreferrer"
-              style={{ textDecoration: 'none', display: 'block' }}>
+            <a href="http://www.thebrouhahacollective.com" target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', display: 'block' }}>
               <span className="label" style={{ display: 'block', color: 'var(--ink-dim)', marginBottom: 4 }}>the Brouhaha Collective</span>
               <span style={{ fontWeight: 700, letterSpacing: '0.25em', fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--accent)' }}>IDEA LAB</span>
             </a>
@@ -199,7 +259,7 @@ export default function App() {
 
       <div style={{ maxWidth: 1600, margin: '0 auto', padding: '2rem' }}>
 
-        {/* ── How It Works ── */}
+        {/* How It Works */}
         <div style={{ borderLeft: '3px solid var(--accent)', paddingLeft: '1rem', marginBottom: '2rem', maxWidth: 700 }}>
           <span style={{ fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.75rem' }}>How it works</span>
           <p style={{ margin: '0.25rem 0 0', color: 'var(--ink-mid)', fontSize: '1rem', lineHeight: 1.6 }}>
@@ -207,7 +267,7 @@ export default function App() {
           </p>
         </div>
 
-        {/* ── Quick Stats ── */}
+        {/* Quick Stats bar */}
         {stats && (
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
             {[['found', stats.total], ['analyzed', stats.analyzed], ['saved', favorites.length]].map(([label, val]) => (
@@ -223,12 +283,12 @@ export default function App() {
           </div>
         )}
 
-        {/* ── Stats Dashboard ── */}
+        {/* Stats Dashboard */}
         {showStats && stats && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem', padding: '1.25rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8 }}>
-            <StatCell label="Total Found"      value={stats.total} />
-            <StatCell label="Analyzed"         value={stats.analyzed} />
-            <StatCell label="Avg Engagement"   value={`${stats.avgEngagement}/10`} />
+            <StatCell label="Total Found"    value={stats.total} />
+            <StatCell label="Analyzed"       value={stats.analyzed} />
+            <StatCell label="Avg Engagement" value={`${stats.avgEngagement}/10`} />
             <div>
               <span className="label" style={{ display: 'block', marginBottom: 8 }}>Distribution</span>
               {[['High','#4ade80'], ['Medium','#facc15'], ['Low','var(--danger)']].map(([l, clr]) => (
@@ -241,7 +301,7 @@ export default function App() {
           </div>
         )}
 
-        {/* ── Search ── */}
+        {/* Search */}
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '1.5rem', marginBottom: '2rem' }}>
           <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: 260 }}>
@@ -252,22 +312,20 @@ export default function App() {
                 onChange={(e) => setTheme(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleDiscover()}
                 placeholder="Search by theme, newsletter name, or author…"
-                style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-2)', borderRadius: 7, padding: '0.7rem 0.75rem 0.7rem 2.2rem', color: 'var(--ink)', fontSize: '1.05rem', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.15s' }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--border-2)'}
+                className="focus-accent"
+                style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-2)', borderRadius: 7, padding: '0.7rem 0.75rem 0.7rem 2.2rem', color: 'var(--ink)', fontSize: '1.05rem', fontFamily: 'inherit' }}
               />
             </div>
             <button
               onClick={handleDiscover}
               disabled={isLoading.discovery}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.7rem 1.4rem', background: isLoading.discovery ? 'var(--border-2)' : 'var(--accent)', color: 'var(--brand)', border: 'none', borderRadius: 7, fontWeight: 700, fontSize: '0.9rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: isLoading.discovery ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s', whiteSpace: 'nowrap' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.7rem 1.4rem', background: isLoading.discovery ? 'var(--border-2)' : 'var(--accent)', color: 'var(--brand)', border: 'none', borderRadius: 7, fontWeight: 700, fontSize: '0.9rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: isLoading.discovery ? 'not-allowed' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}
             >
               {isLoading.discovery ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
               Find Newsletters
             </button>
           </div>
 
-          {/* Options row */}
           <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: 'var(--ink-mid)', fontSize: '0.9rem' }}>
               <input type="checkbox" checked={excludeMedia} onChange={() => setExcludeMedia(!excludeMedia)} style={{ accentColor: 'var(--accent)' }} />
@@ -281,7 +339,6 @@ export default function App() {
               </button>
             )}
 
-            {/* Search history */}
             {searchHistory.length > 0 && !theme && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                 <Clock size={11} style={{ color: 'var(--ink-dim)' }} />
@@ -303,12 +360,11 @@ export default function App() {
           )}
         </div>
 
-        {/* ── Two-Column Layout ── */}
+        {/* Two-Column Layout */}
         <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '1.5rem', alignItems: 'start' }}>
 
           {/* LEFT — Dossier Panel */}
           <div style={{ position: 'sticky', top: '1.5rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-            {/* Panel header */}
             <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span className="label" style={{ color: 'var(--accent)' }}>Intelligence Brief</span>
               <div style={{ flex: 1, height: 1, background: 'var(--border)', marginLeft: '0.5rem' }} />
@@ -334,22 +390,21 @@ export default function App() {
 
           {/* RIGHT — Results */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-            {/* Results toolbar */}
+            {/* Toolbar */}
             <div style={{ padding: '0.85rem 1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               <span className="label" style={{ color: 'var(--accent)' }}>
                 Newsletters {displayList.length > 0 && `(${displayList.length})`}
               </span>
-              <div style={{ flex: 1 }} />
 
-              {/* Filters */}
-              <DossierSelect value={sortBy} onChange={setSortBy} options={[['relevance','Relevance'],['name','Name'],['engagement','Engagement'],['reach','Reach']]} prefix="Sort:" />
+              {/* Filters — marginLeft: auto pushes to right without a spacer element */}
+              <DossierSelect value={sortBy} onChange={setSortBy} options={[['relevance','Relevance'],['name','Name'],['engagement','Engagement'],['reach','Reach']]} prefix="Sort:" style={{ marginLeft: 'auto' }} />
               <DossierSelect value={filterEngagement} onChange={setFilterEngagement} options={[['all','Engagement'],['high','High'],['medium','Medium'],['low','Low']]} />
               <input type="text" value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)} placeholder="Location…"
                 style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 5, padding: '0.3rem 0.6rem', color: 'var(--ink)', fontSize: '0.75rem', width: 110, fontFamily: 'inherit', outline: 'none' }} />
               <DossierSelect value={filterLanguage} onChange={setFilterLanguage} options={[['all','Language'],['english','English'],['spanish','Spanish'],['french','French'],['other','Other']]} />
 
-              {(filterEngagement !== 'all' || filterLocation || filterLanguage !== 'all') && (
-                <button onClick={() => { setFilterEngagement('all'); setFilterLocation(''); setFilterLanguage('all'); }}
+              {filtersActive && (
+                <button onClick={resetFilters}
                   style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem', padding: 0 }}>
                   <X size={11} /> Clear
                 </button>
@@ -357,7 +412,7 @@ export default function App() {
 
               {selectedCount > 0 && (
                 <button onClick={handleExport} disabled={isLoading.export}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.75rem', background: 'transparent', border: `1px solid var(--accent)`, borderRadius: 5, color: 'var(--accent)', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'inherit' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.75rem', background: 'transparent', border: '1px solid var(--accent)', borderRadius: 5, color: 'var(--accent)', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'inherit' }}>
                   {isLoading.export ? <Loader2 size={11} className="animate-spin" /> : <FileDown size={11} />}
                   Export {Math.min(selectedCount, 25)}
                 </button>
@@ -389,13 +444,13 @@ export default function App() {
             {!isLoading.discovery && displayList.length > 0 && (
               <ul className="scroll-thin" style={{ listStyle: 'none', margin: 0, padding: '0.5rem 0', maxHeight: '75vh', overflowY: 'auto' }}>
                 {displayList.map((n, i) => {
-                  const cached   = getCache(`analysis_${n.url}`);
+                  const cached   = analysisCache[n.url];
                   const isActive = currentAnalysis?.url === n.url;
+                  const favored  = isFav(n.url);
                   return (
-                    <li key={n.url} className="fade-up"
-                      style={{ animationDelay: `${i * 20}ms`, borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent', padding: '0.75rem 1.25rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start', borderBottom: '1px solid var(--border)', transition: 'background 0.1s', cursor: 'default' }}
-                      onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'var(--surface-2)'; }}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    <li key={n.url}
+                      className={`list-item${isActive ? ' is-active' : ''} fade-up`}
+                      style={{ animationDelay: `${i * 20}ms`, borderLeft: isActive ? '3px solid var(--accent)' : '3px solid transparent', padding: '0.75rem 1.25rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start', borderBottom: '1px solid var(--border)' }}
                     >
                       <input type="checkbox" checked={!!selected[n.url]} onChange={() => setSelected((p) => ({ ...p, [n.url]: !p[n.url] }))}
                         style={{ marginTop: 3, flexShrink: 0, accentColor: 'var(--accent)', cursor: 'pointer' }} />
@@ -407,8 +462,8 @@ export default function App() {
                             {n.name}
                           </button>
                           <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-                            <IconBtn onClick={() => toggleFav(n)} title={isFav(n.url) ? 'Unsave' : 'Save'}>
-                              {isFav(n.url) ? <Star size={13} style={{ color: 'var(--accent)', fill: 'var(--accent)' }} /> : <StarOff size={13} style={{ color: 'var(--ink-dim)' }} />}
+                            <IconBtn onClick={() => toggleFav(n)} title={favored ? 'Unsave' : 'Save'}>
+                              {favored ? <Star size={13} style={{ color: 'var(--accent)', fill: 'var(--accent)' }} /> : <StarOff size={13} style={{ color: 'var(--ink-dim)' }} />}
                             </IconBtn>
                             <IconBtn onClick={() => copyUrl(n.url)} title="Copy URL">
                               {copiedUrl === n.url ? <Check size={13} style={{ color: 'var(--accent)' }} /> : <Copy size={13} style={{ color: 'var(--ink-dim)' }} />}
@@ -421,7 +476,7 @@ export default function App() {
                         {cached && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.4rem' }}>
                             {cached.categories?.map((cat) => (
-                              <span key={cat} style={{ background: 'var(--purple)', color: '#4B3070', fontSize: '0.75rem', fontWeight: 600, padding: '0.1rem 0.5rem', borderRadius: 100, letterSpacing: '0.04em' }}>{cat}</span>
+                              <span key={cat} style={{ background: 'var(--purple)', color: '#4B3070', fontSize: '0.75rem', fontWeight: 600, padding: '0.1rem 0.5rem', borderRadius: 100 }}>{cat}</span>
                             ))}
                             {cached.engagement && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.75rem', padding: '0.1rem 0.5rem', borderRadius: 100 }}>{cached.engagement}</span>}
                             {cached.frequency  && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.75rem', padding: '0.1rem 0.5rem', borderRadius: 100 }}>{cached.frequency}</span>}
@@ -434,13 +489,12 @@ export default function App() {
               </ul>
             )}
 
-            {/* Empty states */}
             {!isLoading.discovery && displayList.length === 0 && newsletters.length === 0 && (
               <EmptyState icon={Search} text="Enter a search term above to discover newsletters." />
             )}
             {!isLoading.discovery && displayList.length === 0 && newsletters.length > 0 && (
               <EmptyState icon={Filter} text="No newsletters match your current filters.">
-                <button onClick={() => { setFilterEngagement('all'); setFilterLocation(''); setFilterLanguage('all'); }}
+                <button onClick={resetFilters}
                   style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '1.05rem', textDecoration: 'underline', fontFamily: 'inherit', marginTop: '0.5rem' }}>
                   Clear all filters
                 </button>
@@ -462,8 +516,6 @@ export default function App() {
 function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
   return (
     <div style={{ padding: '1.25rem', overflowY: 'auto', maxHeight: 'calc(100vh - 200px)' }} className="scroll-thin">
-
-      {/* Name + actions */}
       <div style={{ marginBottom: '1.25rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
           <h2 className="font-display" style={{ margin: 0, fontSize: '1.4rem', lineHeight: 1.2, color: 'var(--ink)', fontWeight: 400, flex: 1 }}>{a.name}</h2>
@@ -472,12 +524,10 @@ function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
           </IconBtn>
         </div>
         <a href={a.url} target="_blank" rel="noopener noreferrer"
+          className="hover-color-accent"
           style={{ color: 'var(--ink-dim)', fontSize: '0.95rem', textDecoration: 'none', display: 'block', marginTop: 4, wordBreak: 'break-all' }}
-          onMouseEnter={(e) => e.target.style.color = 'var(--accent)'}
-          onMouseLeave={(e) => e.target.style.color = 'var(--ink-dim)'}
         >{a.url}</a>
 
-        {/* Categories + meta chips */}
         {(a.categories?.length > 0 || a.frequency || a.language) && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.6rem' }}>
             {a.categories?.map((cat) => (
@@ -489,15 +539,12 @@ function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
         )}
       </div>
 
-      {/* Divider */}
       <hr className="hairline" style={{ marginBottom: '1.25rem' }} />
 
-      {/* Theme */}
       <BriefSection label="Theme">
         <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.95rem', lineHeight: 1.6 }}>{a.theme}</p>
       </BriefSection>
 
-      {/* Metrics row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
         <MetricCell icon={<Users size={12} />} label="Reach" value={a.reach} verified={a.reach_verified} />
         <MetricCell icon={<MessageSquare size={12} />} label="Engagement" value={a.engagement} sub={a.engagement_score ? `${a.engagement_score}/10` : null} />
@@ -531,11 +578,9 @@ function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
         <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.95rem', lineHeight: 1.65 }}>{a.publishing_insights}</p>
       </BriefSection>
 
-      {/* Copy URL */}
       <button onClick={() => onCopy(a.url)}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', width: '100%', padding: '0.6rem', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--ink-dim)', cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'inherit', marginTop: '0.5rem', transition: 'border-color 0.15s' }}
-        onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent)'}
-        onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+        className="hover-accent-border"
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', width: '100%', padding: '0.6rem', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--ink-dim)', cursor: 'pointer', fontSize: '0.75rem', fontFamily: 'inherit', marginTop: '0.5rem' }}
       >
         {copiedUrl === a.url ? <><Check size={13} style={{ color: 'var(--accent)' }} /> Copied!</> : <><Copy size={13} /> Copy URL</>}
       </button>
@@ -585,11 +630,10 @@ function StatCell({ label, value }) {
 
 function IconBtn({ onClick, title, children }) {
   return (
-    <button onClick={onClick} title={title}
-      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center', borderRadius: 4, transition: 'background 0.1s' }}
-      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface-3)'}
-      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-    >{children}</button>
+    <button onClick={onClick} title={title} className="icon-btn"
+      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '0.2rem', display: 'flex', alignItems: 'center' }}>
+      {children}
+    </button>
   );
 }
 
@@ -603,10 +647,10 @@ function EmptyState({ icon: Icon, text, children }) {
   );
 }
 
-function DossierSelect({ value, onChange, options, prefix }) {
+function DossierSelect({ value, onChange, options, prefix, style: extraStyle }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)}
-      style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 5, padding: '0.3rem 0.6rem', color: 'var(--ink-mid)', fontSize: '0.95rem', fontFamily: 'inherit', outline: 'none', cursor: 'pointer', appearance: 'none' }}>
+      style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 5, padding: '0.3rem 0.6rem', color: 'var(--ink-mid)', fontSize: '0.95rem', fontFamily: 'inherit', outline: 'none', cursor: 'pointer', appearance: 'none', ...extraStyle }}>
       {options.map(([v, l]) => <option key={v} value={v}>{prefix ? `${prefix} ${l}` : l}</option>)}
     </select>
   );
