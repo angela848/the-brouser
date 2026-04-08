@@ -499,7 +499,7 @@ function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
 
       {/* Metrics row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
-        <MetricCell icon={<Users size={12} />} label="Reach" value={a.reach} />
+        <MetricCell icon={<Users size={12} />} label="Reach" value={a.reach} verified={a.reach_verified} />
         <MetricCell icon={<MessageSquare size={12} />} label="Engagement" value={a.engagement} sub={a.engagement_score ? `${a.engagement_score}/10` : null} />
       </div>
 
@@ -557,12 +557,19 @@ function BriefSection({ label, icon, extra, children }) {
   );
 }
 
-function MetricCell({ icon, label, value, sub }) {
+function MetricCell({ icon, label, value, sub, verified }) {
   return (
     <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, padding: '0.6rem 0.75rem' }}>
       <span className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--ink-dim)', marginBottom: 4 }}>{icon}{label}</span>
-      <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)' }}>{value}</span>
-      {sub && <span style={{ fontSize: '0.7rem', color: 'var(--ink-dim)', marginLeft: 4 }}>({sub})</span>}
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem', flexWrap: 'wrap' }}>
+        <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)' }}>{value}</span>
+        {sub && <span style={{ fontSize: '0.7rem', color: 'var(--ink-dim)' }}>({sub})</span>}
+        {verified && (
+          <span title="Verified directly from Substack" style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', background: 'var(--accent)', color: 'var(--brand)', padding: '0.1rem 0.4rem', borderRadius: 3 }}>
+            Substack ✓
+          </span>
+        )}
+      </div>
     </div>
   );
 }
