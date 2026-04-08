@@ -14,11 +14,11 @@ module.exports = async function handler(req, res) {
 
   const sanitizedQuery = query.trim().slice(0, 200);
 
-  const user = `Find up to 20 popular and relevant self-published newsletters for the query: "${sanitizedQuery}".
-Use web search to ensure these are currently active and popular.
+  const user = `Find up to 20 independent newsletters that REGULARLY COVER THE TOPIC of: "${sanitizedQuery}".
 
-Prioritize platforms: Substack, beehiiv, Ghost, Buttondown, Kit (formerly ConvertKit), Paragraph.
-Include diverse finds (not just the top 1). Prioritize newsletters with strong engagement and unique perspectives.
+Important: match on topic coverage, not on newsletter name. A newsletter called "Fathom" that covers travel and hotels should be included; a newsletter called "Hotels Today" that covers finance should not.
+
+Spread results across multiple platforms — include newsletters from Substack, beehiiv, Ghost, Buttondown, Kit (formerly ConvertKit), and Paragraph. Do NOT return only Substack newsletters; actively search each platform.
 ${excludeMedia ? 'EXCLUDE major traditional media outlets (NYT, WSJ, Washington Post, etc). Focus on independent creators.' : ''}
 
 Return ONLY a valid JSON array of objects with exactly two fields: "name" (string) and "url" (string, full URL).
