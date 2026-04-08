@@ -182,7 +182,7 @@ export default function App() {
             <h1 className="font-display" style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', lineHeight: 0.9, margin: 0, color: 'var(--ink)', letterSpacing: '-0.02em', fontWeight: 400 }}>
               The Brouser™
             </h1>
-            <p style={{ margin: '0.5rem 0 0', color: 'var(--ink-dim)', fontSize: '0.8rem', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500 }}>
+            <p style={{ margin: '0.5rem 0 0', color: 'var(--ink-dim)', fontSize: '0.9rem', letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 500 }}>
               AI-powered newsletter discovery &nbsp;·&nbsp; by Brouhaha Collective
             </p>
           </div>
@@ -201,8 +201,8 @@ export default function App() {
 
         {/* ── How It Works ── */}
         <div style={{ borderLeft: '3px solid var(--accent)', paddingLeft: '1rem', marginBottom: '2rem', maxWidth: 700 }}>
-          <span style={{ fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.65rem' }}>How it works</span>
-          <p style={{ margin: '0.25rem 0 0', color: 'var(--ink-mid)', fontSize: '0.85rem', lineHeight: 1.6 }}>
+          <span style={{ fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.75rem' }}>How it works</span>
+          <p style={{ margin: '0.25rem 0 0', color: 'var(--ink-mid)', fontSize: '1rem', lineHeight: 1.6 }}>
             We search Substack, Ghost, beehiiv & more. Click any result for a deep-dive intelligence brief, or select a few to export a full media list.
           </p>
         </div>
@@ -217,7 +217,7 @@ export default function App() {
               </div>
             ))}
             <button onClick={() => setShowStats(!showStats)}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.85rem', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--ink-dim)', cursor: 'pointer', fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'inherit' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.85rem', background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--ink-dim)', cursor: 'pointer', fontSize: '0.95rem', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'inherit' }}>
               <BarChart3 size={12} /> {showStats ? 'Hide' : 'View'} Stats
             </button>
           </div>
@@ -232,7 +232,7 @@ export default function App() {
             <div>
               <span className="label" style={{ display: 'block', marginBottom: 8 }}>Distribution</span>
               {[['High','#4ade80'], ['Medium','#facc15'], ['Low','var(--danger)']].map(([l, clr]) => (
-                <div key={l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 3 }}>
+                <div key={l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', marginBottom: 3 }}>
                   <span style={{ color: clr }}>{l}</span>
                   <span style={{ color: 'var(--ink)', fontWeight: 600 }}>{stats.distribution[l.toLowerCase()]}</span>
                 </div>
@@ -252,7 +252,7 @@ export default function App() {
                 onChange={(e) => setTheme(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleDiscover()}
                 placeholder="Search by theme, newsletter name, or author…"
-                style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-2)', borderRadius: 7, padding: '0.7rem 0.75rem 0.7rem 2.2rem', color: 'var(--ink)', fontSize: '0.875rem', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.15s' }}
+                style={{ width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-2)', borderRadius: 7, padding: '0.7rem 0.75rem 0.7rem 2.2rem', color: 'var(--ink)', fontSize: '1.05rem', outline: 'none', fontFamily: 'inherit', transition: 'border-color 0.15s' }}
                 onFocus={(e) => e.target.style.borderColor = 'var(--accent)'}
                 onBlur={(e) => e.target.style.borderColor = 'var(--border-2)'}
               />
@@ -260,7 +260,7 @@ export default function App() {
             <button
               onClick={handleDiscover}
               disabled={isLoading.discovery}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.7rem 1.4rem', background: isLoading.discovery ? 'var(--border-2)' : 'var(--accent)', color: 'var(--brand)', border: 'none', borderRadius: 7, fontWeight: 700, fontSize: '0.8rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: isLoading.discovery ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s', whiteSpace: 'nowrap' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.7rem 1.4rem', background: isLoading.discovery ? 'var(--border-2)' : 'var(--accent)', color: 'var(--brand)', border: 'none', borderRadius: 7, fontWeight: 700, fontSize: '0.9rem', letterSpacing: '0.08em', textTransform: 'uppercase', cursor: isLoading.discovery ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'opacity 0.15s', whiteSpace: 'nowrap' }}
             >
               {isLoading.discovery ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
               Find Newsletters
@@ -269,14 +269,14 @@ export default function App() {
 
           {/* Options row */}
           <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: 'var(--ink-mid)', fontSize: '0.8rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: 'var(--ink-mid)', fontSize: '0.9rem' }}>
               <input type="checkbox" checked={excludeMedia} onChange={() => setExcludeMedia(!excludeMedia)} style={{ accentColor: 'var(--accent)' }} />
               Exclude major media outlets
             </label>
 
             {favorites.length > 0 && (
               <button onClick={() => setNewsletters(favorites)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', border: 'none', color: 'var(--ink-mid)', cursor: 'pointer', fontSize: '0.8rem', fontFamily: 'inherit', padding: 0 }}>
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'transparent', border: 'none', color: 'var(--ink-mid)', cursor: 'pointer', fontSize: '0.9rem', fontFamily: 'inherit', padding: 0 }}>
                 <Star size={13} style={{ color: 'var(--accent)' }} /> View Saved ({favorites.length})
               </button>
             )}
@@ -288,7 +288,7 @@ export default function App() {
                 <span className="label">Recent:</span>
                 {searchHistory.slice(0, 5).map((t) => (
                   <button key={t} onClick={() => setTheme(t)}
-                    style={{ background: 'transparent', border: 'none', color: 'var(--ink-dim)', cursor: 'pointer', fontSize: '0.78rem', fontFamily: 'inherit', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
+                    style={{ background: 'transparent', border: 'none', color: 'var(--ink-dim)', cursor: 'pointer', fontSize: '1.05rem', fontFamily: 'inherit', padding: 0, textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: 3 }}>
                     {t}
                   </button>
                 ))}
@@ -297,7 +297,7 @@ export default function App() {
           </div>
 
           {error && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginTop: '0.85rem', padding: '0.75rem 1rem', background: 'rgba(255,107,107,0.08)', border: '1px solid rgba(255,107,107,0.25)', borderRadius: 7, color: 'var(--danger)', fontSize: '0.82rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginTop: '0.85rem', padding: '0.75rem 1rem', background: 'rgba(255,107,107,0.08)', border: '1px solid rgba(255,107,107,0.25)', borderRadius: 7, color: 'var(--danger)', fontSize: '0.95rem' }}>
               <X size={14} style={{ flexShrink: 0, marginTop: 2 }} />{error}
             </div>
           )}
@@ -317,7 +317,7 @@ export default function App() {
             {isLoading.analysis && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 1.25rem', gap: '0.75rem' }}>
                 <Loader2 size={20} className="animate-spin" style={{ color: 'var(--accent)' }} />
-                <span style={{ color: 'var(--ink-dim)', fontSize: '0.8rem', letterSpacing: '0.06em' }}>Researching newsletter…</span>
+                <span style={{ color: 'var(--ink-dim)', fontSize: '0.9rem', letterSpacing: '0.06em' }}>Researching newsletter…</span>
               </div>
             )}
 
@@ -326,7 +326,7 @@ export default function App() {
               : !isLoading.analysis && (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 1.25rem', textAlign: 'center', opacity: 0.4 }}>
                   <Zap size={28} style={{ color: 'var(--ink-dim)', marginBottom: '0.75rem' }} />
-                  <p style={{ margin: 0, color: 'var(--ink-dim)', fontSize: '0.85rem' }}>Select a newsletter to generate a brief</p>
+                  <p style={{ margin: 0, color: 'var(--ink-dim)', fontSize: '1rem' }}>Select a newsletter to generate a brief</p>
                 </div>
               )
             }
@@ -350,14 +350,14 @@ export default function App() {
 
               {(filterEngagement !== 'all' || filterLocation || filterLanguage !== 'all') && (
                 <button onClick={() => { setFilterEngagement('all'); setFilterLocation(''); setFilterLanguage('all'); }}
-                  style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.72rem', padding: 0 }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: 3, background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.95rem', padding: 0 }}>
                   <X size={11} /> Clear
                 </button>
               )}
 
               {selectedCount > 0 && (
                 <button onClick={handleExport} disabled={isLoading.export}
-                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.75rem', background: 'transparent', border: `1px solid var(--accent)`, borderRadius: 5, color: 'var(--accent)', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'inherit' }}>
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.3rem 0.75rem', background: 'transparent', border: `1px solid var(--accent)`, borderRadius: 5, color: 'var(--accent)', cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', fontFamily: 'inherit' }}>
                   {isLoading.export ? <Loader2 size={11} className="animate-spin" /> : <FileDown size={11} />}
                   Export {Math.min(selectedCount, 25)}
                 </button>
@@ -381,7 +381,7 @@ export default function App() {
             {isLoading.discovery && (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', padding: '4rem 1.25rem' }}>
                 <Loader2 size={16} className="animate-spin" style={{ color: 'var(--accent)' }} />
-                <span style={{ color: 'var(--ink-dim)', fontSize: '0.82rem', letterSpacing: '0.04em' }}>Searching across platforms…</span>
+                <span style={{ color: 'var(--ink-dim)', fontSize: '0.95rem', letterSpacing: '0.04em' }}>Searching across platforms…</span>
               </div>
             )}
 
@@ -403,7 +403,7 @@ export default function App() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', justifyContent: 'space-between' }}>
                           <button onClick={() => handleAnalyze(n)} disabled={isLoading.analysis}
-                            style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', color: isActive ? 'var(--accent)' : 'var(--ink)', fontWeight: 600, fontSize: '0.875rem', fontFamily: 'inherit', lineHeight: 1.3, flex: 1 }}>
+                            style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer', color: isActive ? 'var(--accent)' : 'var(--ink)', fontWeight: 600, fontSize: '1.05rem', fontFamily: 'inherit', lineHeight: 1.3, flex: 1 }}>
                             {n.name}
                           </button>
                           <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
@@ -416,15 +416,15 @@ export default function App() {
                           </div>
                         </div>
 
-                        <p style={{ margin: '2px 0 0', color: 'var(--ink-dim)', fontSize: '0.72rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.url}</p>
+                        <p style={{ margin: '2px 0 0', color: 'var(--ink-dim)', fontSize: '0.95rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.url}</p>
 
                         {cached && (
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.4rem' }}>
                             {cached.categories?.map((cat) => (
-                              <span key={cat} style={{ background: 'var(--purple)', color: '#4B3070', fontSize: '0.65rem', fontWeight: 600, padding: '0.1rem 0.5rem', borderRadius: 100, letterSpacing: '0.04em' }}>{cat}</span>
+                              <span key={cat} style={{ background: 'var(--purple)', color: '#4B3070', fontSize: '0.75rem', fontWeight: 600, padding: '0.1rem 0.5rem', borderRadius: 100, letterSpacing: '0.04em' }}>{cat}</span>
                             ))}
-                            {cached.engagement && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.65rem', padding: '0.1rem 0.5rem', borderRadius: 100 }}>{cached.engagement}</span>}
-                            {cached.frequency  && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.65rem', padding: '0.1rem 0.5rem', borderRadius: 100 }}>{cached.frequency}</span>}
+                            {cached.engagement && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.75rem', padding: '0.1rem 0.5rem', borderRadius: 100 }}>{cached.engagement}</span>}
+                            {cached.frequency  && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.75rem', padding: '0.1rem 0.5rem', borderRadius: 100 }}>{cached.frequency}</span>}
                           </div>
                         )}
                       </div>
@@ -441,7 +441,7 @@ export default function App() {
             {!isLoading.discovery && displayList.length === 0 && newsletters.length > 0 && (
               <EmptyState icon={Filter} text="No newsletters match your current filters.">
                 <button onClick={() => { setFilterEngagement('all'); setFilterLocation(''); setFilterLanguage('all'); }}
-                  style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.78rem', textDecoration: 'underline', fontFamily: 'inherit', marginTop: '0.5rem' }}>
+                  style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '1.05rem', textDecoration: 'underline', fontFamily: 'inherit', marginTop: '0.5rem' }}>
                   Clear all filters
                 </button>
               </EmptyState>
@@ -449,7 +449,7 @@ export default function App() {
           </div>
         </div>
 
-        <p style={{ textAlign: 'center', color: 'var(--ink-dim)', fontSize: '0.72rem', marginTop: '2rem', letterSpacing: '0.04em' }}>
+        <p style={{ textAlign: 'center', color: 'var(--ink-dim)', fontSize: '0.95rem', marginTop: '2rem', letterSpacing: '0.04em' }}>
           Use checkboxes to multi-select newsletters, then export a full media list CSV
         </p>
       </div>
@@ -472,7 +472,7 @@ function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
           </IconBtn>
         </div>
         <a href={a.url} target="_blank" rel="noopener noreferrer"
-          style={{ color: 'var(--ink-dim)', fontSize: '0.72rem', textDecoration: 'none', display: 'block', marginTop: 4, wordBreak: 'break-all' }}
+          style={{ color: 'var(--ink-dim)', fontSize: '0.95rem', textDecoration: 'none', display: 'block', marginTop: 4, wordBreak: 'break-all' }}
           onMouseEnter={(e) => e.target.style.color = 'var(--accent)'}
           onMouseLeave={(e) => e.target.style.color = 'var(--ink-dim)'}
         >{a.url}</a>
@@ -481,10 +481,10 @@ function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
         {(a.categories?.length > 0 || a.frequency || a.language) && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.6rem' }}>
             {a.categories?.map((cat) => (
-              <span key={cat} style={{ background: 'var(--purple)', color: '#4B3070', fontSize: '0.65rem', fontWeight: 600, padding: '0.15rem 0.55rem', borderRadius: 100 }}>{cat}</span>
+              <span key={cat} style={{ background: 'var(--purple)', color: '#4B3070', fontSize: '0.75rem', fontWeight: 600, padding: '0.15rem 0.55rem', borderRadius: 100 }}>{cat}</span>
             ))}
-            {a.frequency && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.65rem', padding: '0.15rem 0.55rem', borderRadius: 100 }}>📅 {a.frequency}</span>}
-            {a.language  && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.65rem', padding: '0.15rem 0.55rem', borderRadius: 100 }}>🌐 {a.language}</span>}
+            {a.frequency && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.75rem', padding: '0.15rem 0.55rem', borderRadius: 100 }}>📅 {a.frequency}</span>}
+            {a.language  && <span style={{ background: 'var(--surface-3)', color: 'var(--ink-mid)', fontSize: '0.75rem', padding: '0.15rem 0.55rem', borderRadius: 100 }}>🌐 {a.language}</span>}
           </div>
         )}
       </div>
@@ -494,7 +494,7 @@ function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
 
       {/* Theme */}
       <BriefSection label="Theme">
-        <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.82rem', lineHeight: 1.6 }}>{a.theme}</p>
+        <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.95rem', lineHeight: 1.6 }}>{a.theme}</p>
       </BriefSection>
 
       {/* Metrics row */}
@@ -504,31 +504,31 @@ function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
       </div>
 
       <BriefSection label="Location" icon={<MapPin size={11} />}>
-        <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.82rem' }}>{a.location}</p>
+        <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.95rem' }}>{a.location}</p>
       </BriefSection>
 
       <BriefSection label="Contact" icon={<Mail size={11} />}>
         {a.contact?.includes('@')
-          ? <a href={`mailto:${a.contact}`} style={{ color: 'var(--accent)', fontSize: '0.82rem', textDecoration: 'none', wordBreak: 'break-all' }}>{a.contact}</a>
+          ? <a href={`mailto:${a.contact}`} style={{ color: 'var(--accent)', fontSize: '0.95rem', textDecoration: 'none', wordBreak: 'break-all' }}>{a.contact}</a>
           : a.contact?.startsWith('http')
-            ? <a href={a.contact} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: '0.82rem', textDecoration: 'none' }}>Contact form / page →</a>
-            : <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.82rem' }}>{a.contact}</p>
+            ? <a href={a.contact} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: '0.95rem', textDecoration: 'none' }}>Contact form / page →</a>
+            : <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.95rem' }}>{a.contact}</p>
         }
       </BriefSection>
 
       <BriefSection label="PR Insights" icon={<Briefcase size={11} />} extra={
         a.muckrack_url && a.muckrack_url !== 'Not found'
           ? <a href={a.muckrack_url} target="_blank" rel="noopener noreferrer"
-              style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', textDecoration: 'none', background: 'var(--surface-3)', padding: '0.2rem 0.55rem', borderRadius: 4 }}>
+              style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--accent)', textDecoration: 'none', background: 'var(--surface-3)', padding: '0.2rem 0.55rem', borderRadius: 4 }}>
               Muck Rack →
             </a>
           : null
       }>
-        <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.82rem', lineHeight: 1.65 }}>{a.pr_insights}</p>
+        <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.95rem', lineHeight: 1.65 }}>{a.pr_insights}</p>
       </BriefSection>
 
       <BriefSection label="Publishing Insight" icon={<DollarSign size={11} />}>
-        <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.82rem', lineHeight: 1.65 }}>{a.publishing_insights}</p>
+        <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.95rem', lineHeight: 1.65 }}>{a.publishing_insights}</p>
       </BriefSection>
 
       {/* Copy URL */}
@@ -590,7 +590,7 @@ function EmptyState({ icon: Icon, text, children }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '5rem 2rem', textAlign: 'center', opacity: 0.5 }}>
       <Icon size={28} style={{ color: 'var(--ink-dim)', marginBottom: '0.75rem' }} />
-      <p style={{ margin: 0, color: 'var(--ink-dim)', fontSize: '0.85rem' }}>{text}</p>
+      <p style={{ margin: 0, color: 'var(--ink-dim)', fontSize: '1rem' }}>{text}</p>
       {children}
     </div>
   );
@@ -599,7 +599,7 @@ function EmptyState({ icon: Icon, text, children }) {
 function DossierSelect({ value, onChange, options, prefix }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)}
-      style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 5, padding: '0.3rem 0.6rem', color: 'var(--ink-mid)', fontSize: '0.72rem', fontFamily: 'inherit', outline: 'none', cursor: 'pointer', appearance: 'none' }}>
+      style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 5, padding: '0.3rem 0.6rem', color: 'var(--ink-mid)', fontSize: '0.95rem', fontFamily: 'inherit', outline: 'none', cursor: 'pointer', appearance: 'none' }}>
       {options.map(([v, l]) => <option key={v} value={v}>{prefix ? `${prefix} ${l}` : l}</option>)}
     </select>
   );
