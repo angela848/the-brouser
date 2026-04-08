@@ -53,6 +53,7 @@ const persistAnalysis = (url, data) => {
 export default function App() {
   const [theme, setTheme]               = useState('');
   const [excludeMedia, setExcludeMedia] = useState(true);
+  const [excludeTrade, setExcludeTrade]   = useState(true);
   const [newsletters, setNewsletters]   = useState([]);
   const [selected, setSelected]         = useState({});
   const [currentAnalysis, setCurrentAnalysis] = useState(null);
@@ -137,7 +138,7 @@ export default function App() {
 
   const handleDiscover = async () => {
     if (!theme.trim()) { setError('Please enter a search term.'); return; }
-    const cacheKey = `${theme}_${excludeMedia}`;
+    const cacheKey = `${theme}_${excludeMedia}_${excludeTrade}`;
     const cached = getDiscoveryCache(cacheKey);
     if (cached) { setNewsletters(cached); setSelected({}); setCurrentAnalysis(null); return; }
 
@@ -146,7 +147,7 @@ export default function App() {
     addHistory(theme);
 
     try {
-      const data = await apiPost('/api/search', { query: theme, excludeMedia });
+      const data = await apiPost('/api/search', { query: theme, excludeMedia, excludeTrade });
       setNewsletters(data.newsletters || []);
       setDiscoveryCache(cacheKey, data.newsletters || []);
     } catch (e) { setError(e.message); }
@@ -341,6 +342,10 @@ export default function App() {
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: 'var(--ink-mid)', fontSize: '0.9rem' }}>
               <input type="checkbox" checked={excludeMedia} onChange={() => setExcludeMedia(!excludeMedia)} style={{ accentColor: 'var(--accent)' }} />
               Exclude major media outlets
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', color: 'var(--ink-mid)', fontSize: '0.9rem' }}>
+              <input type="checkbox" checked={excludeTrade} onChange={() => setExcludeTrade(!excludeTrade)} style={{ accentColor: 'var(--accent)' }} />
+              Exclude trade &amp; B2B
             </label>
 
             {favorites.length > 0 && (

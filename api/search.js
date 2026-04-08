@@ -4,7 +4,7 @@ module.exports = async function handler(req, res) {
   setCors(res);
   if (!requirePost(req, res)) return;
 
-  const { query, excludeMedia = true } = req.body || {};
+  const { query, excludeMedia = true, excludeTrade = true } = req.body || {};
   if (!query || typeof query !== 'string' || !query.trim()) {
     return res.status(400).json({ error: 'A search query is required.' });
   }
@@ -28,7 +28,7 @@ Search for:
 2. Travel/lifestyle/culture newsletters that REGULARLY feature this topic even if the name doesn't reference it (e.g. Fathom for hotels)
 3. Newsletters in adjacent lifestyle categories where this topic naturally appears
 
-EXCLUDE: trade publications, industry news, B2B newsletters, corporate brand newsletters.
+${excludeTrade ? 'EXCLUDE: trade publications, industry news, B2B newsletters, corporate brand newsletters. Focus on consumer-facing and enthusiast newsletters.' : 'Include trade and B2B newsletters if relevant.'}
 ${excludeMedia ? 'EXCLUDE major media outlets (NYT, WSJ, Condé Nast, Hearst, etc). Independent creators only.' : ''}
 
 Spread results across platforms: Substack, beehiiv, Ghost, Buttondown, Kit, Paragraph. Do NOT cluster on one platform.
