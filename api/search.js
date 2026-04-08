@@ -14,31 +14,27 @@ module.exports = async function handler(req, res) {
 
   const sanitizedQuery = query.trim().slice(0, 200);
 
-  const user = `You are helping a PR professional find independent newsletters to pitch for the topic: "${sanitizedQuery}".
+  const tradeRule = excludeTrade
+    ? 'Exclude trade publications, B2B industry newsletters, and corporate brand newsletters.'
+    : 'Include trade and B2B newsletters where relevant.';
+  const mediaRule = excludeMedia
+    ? 'Exclude major media brands (NYT, WSJ, Condé Nast, Hearst, etc). Independent creators only.'
+    : '';
 
-These are newsletters written by independent creators for a CONSUMER or ENTHUSIAST audience — NOT trade publications, NOT B2B industry news, NOT corporate newsletters.
+  const system = `You are a PR research expert. Your job is to find real, active, independent newsletters that a PR professional could pitch.
+Think broadly about topics — "hotels" means travel writers, luxury lifestyle, weekend getaways, design travel, not just newsletters with "hotel" in the name.
+${tradeRule}
+${mediaRule}
+Spread results across platforms: Substack, beehiiv, Ghost, Buttondown, Kit, Paragraph.
+Return ONLY a valid JSON array. No explanation, no markdown, no other text before or after the array.`;
 
-Think broadly about the topic. For example:
-- "hotels" → travel newsletters, luxury lifestyle, weekend escape guides, design-forward travel writing
-- "food" → recipe writers, restaurant criticism, culinary culture, food travel
-- "finance" → personal finance, investing for individuals, money mindset
-
-Search for:
-1. Newsletters whose name references the topic (e.g. "Hotels Above Par")
-2. Travel/lifestyle/culture newsletters that REGULARLY feature this topic even if the name doesn't reference it (e.g. Fathom for hotels)
-3. Newsletters in adjacent lifestyle categories where this topic naturally appears
-
-${excludeTrade ? 'EXCLUDE: trade publications, industry news, B2B newsletters, corporate brand newsletters. Focus on consumer-facing and enthusiast newsletters.' : 'Include trade and B2B newsletters if relevant.'}
-${excludeMedia ? 'EXCLUDE major media outlets (NYT, WSJ, Condé Nast, Hearst, etc). Independent creators only.' : ''}
-
-Spread results across platforms: Substack, beehiiv, Ghost, Buttondown, Kit, Paragraph. Do NOT cluster on one platform.
-
-Return up to 20 results as ONLY a valid JSON array of objects with exactly two fields: "name" (string) and "url" (string, full URL).
-No markdown, no explanations, no other text — just the JSON array.`;
+  const user = `Find up to 20 independent newsletters related to the topic: "${sanitizedQuery}".
+Include newsletters whose name references this topic AND newsletters in travel/lifestyle/culture that regularly cover it.
+Return as a JSON array where each item has exactly: "name" (string) and "url" (string, full URL).`;
 
   try {
     const perplexityRes = await callPerplexity(apiKey, {
-      system: 'You are a PR research expert helping find independent consumer-facing newsletters for media outreach. Prioritize lifestyle, culture, and enthusiast newsletters over trade or industry publications. Return only valid JSON arrays, nothing else.',
+      system,
       user,
       maxTokens: 3000,
     });

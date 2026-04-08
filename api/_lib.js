@@ -46,7 +46,7 @@ function extractJson(content, type = 'object') {
     const pattern = type === 'array' ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
     const match = content.match(pattern);
     if (!match) return null;
-    return JSON.parse(match[0]);
+    try { return JSON.parse(match[0]); } catch { return null; }
   }
 }
 
