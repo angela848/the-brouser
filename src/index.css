@@ -2,16 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg:        #0B1714;
+  --surface:   #111E1A;
+  --surface-2: #172320;
+  --surface-3: #1D2C28;
+  --ink:       #FAF5EF;
+  --ink-mid:   #A8BCB7;
+  --ink-dim:   #5A736D;
+  --accent:    #D6FF84;
+  --brand:     #033D35;
+  --purple:    #EAD3FF;
+  --purple-dk: #C1A6E2;
+  --border:    #1F3330;
+  --border-2:  #2A4440;
+  --danger:    #FF6B6B;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Masthead font */
+.font-display {
+  font-family: 'Instrument Serif', Georgia, serif;
+}
+
+/* Dossier label — small caps utility */
+.label {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* Hairline divider */
+.hairline {
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+/* Custom scrollbar */
+.scroll-thin::-webkit-scrollbar       { width: 4px; }
+.scroll-thin::-webkit-scrollbar-track { background: transparent; }
+.scroll-thin::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+.scroll-thin::-webkit-scrollbar-thumb:hover { background: var(--ink-dim); }
+
+/* Fade in for results */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up {
+  animation: fadeUp 0.25s ease forwards;
+}
+
+/* Input reset */
+input[type="text"], select, textarea {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+/* Checkbox brand color */
+input[type="checkbox"]:checked {
+  accent-color: var(--accent);
 }
