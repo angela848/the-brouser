@@ -183,10 +183,10 @@ export default function App() {
 
     const q = (s) => `"${String(s || '').replace(/"/g, '""')}"`;
     const rows = [
-      ['Name','URL','Theme','Est. Reach','Engagement','Engagement Score','Contact','Location','Muck Rack','Categories','Frequency','Language','PR Insights','Publishing Insights'],
+      ['Name','URL','Theme','Est. Reach','Engagement','Engagement Score','Email','Pitch Page','Advertise Page','Twitter','Location','Muck Rack','Categories','Frequency','Language','PR Insights','Publishing Insights'],
       ...toExport.flatMap((n, i) => {
         const a = analyses[i];
-        return a ? [[q(n.name),q(n.url),q(a.theme),q(a.reach),q(a.engagement),q(a.engagement_score),q(a.contact),q(a.location),q(a.muckrack_url),q((a.categories||[]).join(', ')),q(a.frequency),q(a.language),q(a.pr_insights),q(a.publishing_insights)]] : [];
+        return a ? [[q(n.name),q(n.url),q(a.theme),q(a.reach),q(a.engagement),q(a.engagement_score),q(a.email),q(a.pitch_page),q(a.advertise_page),q(a.twitter),q(a.location),q(a.muckrack_url),q((a.categories||[]).join(', ')),q(a.frequency),q(a.language),q(a.pr_insights),q(a.publishing_insights)]] : [];
       }),
     ];
     const link = Object.assign(document.createElement('a'), {
@@ -555,12 +555,21 @@ function DossierPanel({ analysis: a, isFav, onToggleFav, copiedUrl, onCopy }) {
       </BriefSection>
 
       <BriefSection label="Contact" icon={<Mail size={11} />}>
-        {a.contact?.includes('@')
-          ? <a href={`mailto:${a.contact}`} style={{ color: 'var(--accent)', fontSize: '0.95rem', textDecoration: 'none', wordBreak: 'break-all' }}>{a.contact}</a>
-          : a.contact?.startsWith('http')
-            ? <a href={a.contact} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent)', fontSize: '0.95rem', textDecoration: 'none' }}>Contact form / page →</a>
-            : <p style={{ margin: 0, color: 'var(--ink-mid)', fontSize: '0.95rem' }}>{a.contact}</p>
-        }
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          {a.email && a.email !== 'Not found'
+            ? <a href={`mailto:${a.email}`} style={{ color: 'var(--accent)', fontSize: '0.95rem', textDecoration: 'none', wordBreak: 'break-all' }}>{a.email}</a>
+            : <span style={{ color: 'var(--ink-dim)', fontSize: '0.85rem' }}>No email found</span>
+          }
+          {a.pitch_page && a.pitch_page !== 'Not found' &&
+            <a href={a.pitch_page} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ink-mid)', fontSize: '0.85rem', textDecoration: 'none' }}>Pitch / contact page →</a>
+          }
+          {a.advertise_page && a.advertise_page !== 'Not found' &&
+            <a href={a.advertise_page} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ink-mid)', fontSize: '0.85rem', textDecoration: 'none' }}>Advertise / sponsor page →</a>
+          }
+          {a.twitter && a.twitter !== 'Not found' &&
+            <span style={{ color: 'var(--ink-mid)', fontSize: '0.85rem' }}>{a.twitter}</span>
+          }
+        </div>
       </BriefSection>
 
       <BriefSection label="PR Insights" icon={<Briefcase size={11} />} extra={

@@ -58,7 +58,14 @@ module.exports = async function handler(req, res) {
   if (!apiKey) return;
 
   const user = `Perform a deep analysis of the newsletter "${name}" at ${url}.
-Search the web for the most current information available about this newsletter.
+Search the web thoroughly for the most current information. Use multiple searches.
+
+For contact information specifically, search:
+1. The newsletter's own website: look for /about, /contact, /work-with-us, /advertise, /media-kit pages
+2. The author's Twitter/X bio (often contains email or link)
+3. Their LinkedIn profile bio
+4. Search: "${name} pitch" and "${name} contact" and "${name} advertise"
+5. Their Muck Rack profile at muckrack.com
 
 Return ONLY a valid JSON object with exactly these fields — no markdown, no other text:
 {
@@ -66,7 +73,10 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ot
   "reach": "Subscriber count estimate — use a number if known, otherwise '10k+', '50k+', 'Unknown', etc.",
   "engagement": "Low" | "Medium" | "High",
   "engagement_score": 1-10 number rating engagement quality,
-  "contact": "Publisher email address or contact page URL. If unknown, write 'Not found'.",
+  "email": "Direct email address for the author or newsletter. Only a real email address — if not found, write 'Not found'.",
+  "pitch_page": "Full URL to their contact, pitch, or work-with-us page. If not found, write 'Not found'.",
+  "advertise_page": "Full URL to their advertise, sponsor, or media kit page. If not found, write 'Not found'.",
+  "twitter": "Twitter/X handle with @ symbol (e.g. @username). If not found, write 'Not found'.",
   "location": "Author city/state/country or timezone. If unknown, write 'Not found'.",
   "muckrack_url": "Full URL to author's Muck Rack profile, or 'Not found'",
   "pr_insights": "2-3 sentences: Does the author accept pitches? What topics do they cover? Any known pitch preferences?",
@@ -79,9 +89,9 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ot
   try {
     const [perplexityRes, substackCount] = await Promise.all([
       callPerplexity(apiKey, {
-        system: 'You are a PR research expert analyzing newsletters. Search the web for accurate, current information. Return only valid JSON objects, nothing else.',
+        system: 'You are a PR research expert analyzing newsletters. Search the web thoroughly — use multiple searches to find contact information. Return only valid JSON objects, nothing else.',
         user,
-        maxTokens: 1500,
+        maxTokens: 2000,
       }),
       fetchSubstackSubscribers(url),
     ]);
@@ -107,7 +117,10 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ot
       reach_verified:       false,
       engagement:           analysis.engagement           || 'Unknown',
       engagement_score:     Number(analysis.engagement_score) || 0,
-      contact:              analysis.contact              || 'Not found',
+      email:                analysis.email                || 'Not found',
+      pitch_page:           analysis.pitch_page           || 'Not found',
+      advertise_page:       analysis.advertise_page       || 'Not found',
+      twitter:              analysis.twitter              || 'Not found',
       location:             analysis.location             || 'Not found',
       muckrack_url:         analysis.muckrack_url         || 'Not found',
       pr_insights:          analysis.pr_insights          || 'Not available',
