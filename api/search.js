@@ -14,21 +14,31 @@ module.exports = async function handler(req, res) {
 
   const sanitizedQuery = query.trim().slice(0, 200);
 
-  const user = `Find up to 20 independent newsletters related to: "${sanitizedQuery}".
+  const user = `You are helping a PR professional find independent newsletters to pitch for the topic: "${sanitizedQuery}".
 
-Include both:
-1. Newsletters whose NAME contains or references the topic (e.g. "Hotels Above Par" for a hotels query)
-2. Newsletters that REGULARLY COVER the topic even if the name doesn't reference it (e.g. a travel newsletter that consistently covers hotels)
+These are newsletters written by independent creators for a CONSUMER or ENTHUSIAST audience — NOT trade publications, NOT B2B industry news, NOT corporate newsletters.
 
-Spread results across multiple platforms — include newsletters from Substack, beehiiv, Ghost, Buttondown, Kit (formerly ConvertKit), and Paragraph. Do NOT return only Substack newsletters; actively search each platform.
-${excludeMedia ? 'EXCLUDE major traditional media outlets (NYT, WSJ, Washington Post, etc). Focus on independent creators.' : ''}
+Think broadly about the topic. For example:
+- "hotels" → travel newsletters, luxury lifestyle, weekend escape guides, design-forward travel writing
+- "food" → recipe writers, restaurant criticism, culinary culture, food travel
+- "finance" → personal finance, investing for individuals, money mindset
 
-Return ONLY a valid JSON array of objects with exactly two fields: "name" (string) and "url" (string, full URL).
+Search for:
+1. Newsletters whose name references the topic (e.g. "Hotels Above Par")
+2. Travel/lifestyle/culture newsletters that REGULARLY feature this topic even if the name doesn't reference it (e.g. Fathom for hotels)
+3. Newsletters in adjacent lifestyle categories where this topic naturally appears
+
+EXCLUDE: trade publications, industry news, B2B newsletters, corporate brand newsletters.
+${excludeMedia ? 'EXCLUDE major media outlets (NYT, WSJ, Condé Nast, Hearst, etc). Independent creators only.' : ''}
+
+Spread results across platforms: Substack, beehiiv, Ghost, Buttondown, Kit, Paragraph. Do NOT cluster on one platform.
+
+Return up to 20 results as ONLY a valid JSON array of objects with exactly two fields: "name" (string) and "url" (string, full URL).
 No markdown, no explanations, no other text — just the JSON array.`;
 
   try {
     const perplexityRes = await callPerplexity(apiKey, {
-      system: 'You are a newsletter research expert. Find real, active self-published newsletters. Return only valid JSON arrays, nothing else.',
+      system: 'You are a PR research expert helping find independent consumer-facing newsletters for media outreach. Prioritize lifestyle, culture, and enthusiast newsletters over trade or industry publications. Return only valid JSON arrays, nothing else.',
       user,
       maxTokens: 3000,
     });
