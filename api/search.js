@@ -46,7 +46,14 @@ Return as a JSON array where each item has exactly: "name" (string) and "url" (s
     }
 
     const data = await perplexityRes.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    console.log('Perplexity response keys:', Object.keys(data));
+    const content = data.choices?.[0]?.message?.content || data.output || '';
+    console.log('Raw content (first 500):', String(content).slice(0, 500));
+
+    if (!content) {
+      console.error('No content in Perplexity response. Full response:', JSON.stringify(data).slice(0, 1000));
+      return res.status(502).json({ error: 'Search returned no content. Please try again.' });
+    }
 
     const parsed = extractJson(content, 'array');
     if (!parsed) {

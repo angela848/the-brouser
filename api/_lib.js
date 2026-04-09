@@ -1,4 +1,4 @@
-const PERPLEXITY_URL = 'https://api.perplexity.ai/chat/completions';
+const PERPLEXITY_URL = 'https://api.perplexity.ai/v1/sonar';
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,6 +31,7 @@ async function callPerplexity(apiKey, { system, user, maxTokens = 1500 }) {
       ],
       temperature: 0.2,
       max_tokens: maxTokens,
+      web_search_options: { search_context_size: 'high' },
     }),
   });
 }

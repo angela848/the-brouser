@@ -103,7 +103,12 @@ Return ONLY a valid JSON object with exactly these fields — no markdown, no ot
     }
 
     const data = await perplexityRes.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const content = data.choices?.[0]?.message?.content || data.output || '';
+
+    if (!content) {
+      console.error('No content in analysis response. Full response:', JSON.stringify(data).slice(0, 1000));
+      return res.status(502).json({ error: 'Analysis returned no content. Please try again.' });
+    }
 
     const analysis = extractJson(content, 'object');
     if (!analysis) {

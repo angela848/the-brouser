@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 
 // ─── Local Storage ────────────────────────────────────────────────────────────
-const DISCOVERY_CACHE_KEY = 'brouser_discovery_v3';
+const DISCOVERY_CACHE_KEY = 'brouser_discovery_v4';
 const ANALYSIS_CACHE_KEY  = 'brouser_analysis_v3';
 const FAV_KEY             = 'brouser_favorites_v3';
 const HISTORY_KEY         = 'brouser_history_v3';
