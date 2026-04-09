@@ -24,7 +24,7 @@ async function callPerplexity(apiKey, { system, user, maxTokens = 1500 }) {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'sonar',
+      model: 'sonar-pro',
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: user },

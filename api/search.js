@@ -21,22 +21,37 @@ module.exports = async function handler(req, res) {
     ? 'Exclude major media brands (NYT, WSJ, Condé Nast, Hearst, etc). Independent creators only.'
     : '';
 
-  const system = `You are a PR research expert. Your job is to find real, active, independent newsletters that a PR professional could pitch.
-Think broadly about topics — "hotels" means travel writers, luxury lifestyle, weekend getaways, design travel, not just newsletters with "hotel" in the name.
+  const system = `You are an expert media list researcher for PR professionals. Your job is to find real, currently active, independently published newsletters that a publicist could pitch stories to.
+
+SEARCH STRATEGY — cast a wide net:
+1. Search Substack directly for newsletters about this topic and adjacent topics.
+2. Search beehiiv, Ghost, Buttondown, Kit, and Paragraph directories.
+3. Think laterally: for "hotels" also search boutique travel, luxury lifestyle, design travel, city guides, food & drink travel, weekend getaways, interior design, hospitality culture. For "skincare" also search beauty, wellness, clean living, dermatology, self-care.
+4. Include newsletters that REGULARLY COVER this topic even if it's not their sole focus (e.g., a lifestyle newsletter that frequently features hotel reviews).
+5. Include niche curators and tastemakers, not just topic-specific publications.
+
 ${tradeRule}
 ${mediaRule}
-Spread results across platforms: Substack, beehiiv, Ghost, Buttondown, Kit, Paragraph.
+
+You MUST return at least 15 results — aim for 20. Search multiple times if needed.
 Return ONLY a valid JSON array. No explanation, no markdown, no other text before or after the array.`;
 
-  const user = `Find up to 20 independent newsletters related to the topic: "${sanitizedQuery}".
-Include newsletters whose name references this topic AND newsletters in travel/lifestyle/culture that regularly cover it.
+  const user = `Find 20 independent newsletters related to: "${sanitizedQuery}".
+
+Search broadly across these categories:
+- Newsletters dedicated to this topic (e.g., with the topic in their name or tagline)
+- Lifestyle, culture, and travel newsletters that regularly cover this topic
+- Niche curators and tastemaker newsletters in adjacent spaces
+- Regional or city-specific newsletters that touch on this topic
+
+For each newsletter, provide the actual working URL (e.g., their Substack URL, custom domain, or homepage).
 Return as a JSON array where each item has exactly: "name" (string) and "url" (string, full URL).`;
 
   try {
     const perplexityRes = await callPerplexity(apiKey, {
       system,
       user,
-      maxTokens: 3000,
+      maxTokens: 4000,
     });
 
     if (!perplexityRes.ok) {
